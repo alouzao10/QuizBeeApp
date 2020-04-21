@@ -1,17 +1,67 @@
-import React from 'react';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import * as serviceWorker from './serviceWorker';
+import './assets/style.css';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+import quizService from './quizService/index';
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+import QuestionBox from './Components/QuestionBox';
+import Results from './Components/Results';
+
+class QuizBee extends Component {
+	// State is located at the nearest parent
+	// to then be used by nested child components
+	state = {
+		questions: [],
+		score: 0,
+		responses: 0
+	};
+
+	getQuestions = () => {
+		quizService().then((questions) => {
+			this.setState({ questions });
+		});
+	};
+
+	checkAnswer = (answer, correct) => {
+		if (answer === correct) {
+			this.setState({ score: this.state.score + 1 });
+		}
+		this.setState({ responses: this.state.responses < 5 ? this.state.responses + 1 : 5 });
+	};
+
+	playAgain = () => {
+		this.getQuestions();
+		this.setState({
+			score: 0,
+			responses: 0
+		});
+	};
+
+	// Function is called on the initial load of the component
+	// Bring in any initial data needed...
+	componentDidMount() {
+		this.getQuestions();
+	}
+
+	render() {
+		return (
+			<div className='container'>
+				<div className='title'>QuizBee</div>
+				{this.state.questions.length > 0 &&
+					this.state.responses < 5 &&
+					this.state.questions.map(({ question, answers, correct, questionId }) => (
+						<QuestionBox
+							question={question}
+							options={answers}
+							key={questionId}
+							selected={(answer) => this.checkAnswer(answer, correct)}
+						/>
+					))}
+				{this.state.responses === 5 ? <Results score={this.state.score} playAgain={this.playAgain} /> : null}
+			</div>
+		);
+	}
+}
+
+// How we initially load in the parent component into root
+ReactDOM.render(<QuizBee />, document.getElementById('root'));
